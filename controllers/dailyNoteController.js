@@ -36,11 +36,28 @@ const createDailyNote = async (req, res) => {
 };
 
 // @desc    Get all daily notes
-// @route   GET /api/daily-notes
+// @route   GET /api/daily-notes?date=YYYY-MM-DD
 // @access  Public
 const getAllDailyNotes = async (req, res) => {
   try {
-    const dailyNotes = await DailyNote.find().sort({ createdAt: -1 });
+    const { date } = req.query;
+    let query = {};
+
+    // If date is provided, filter by that specific date
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.createdAt = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
+
+    const dailyNotes = await DailyNote.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
