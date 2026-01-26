@@ -1,23 +1,45 @@
-const DailyNote = require('../models/DailyNote');
+const DailyNote = require("../models/DailyNote");
 
 // @desc    Create a new daily note
 // @route   POST /api/daily-notes
-// @access  Public
+// @access  Private
 const createDailyNote = async (req, res) => {
   try {
-    const { developerName, previousDayWork, todayPlan, hasBlocker } = req.body;
+    const { previousDayWork, todayPlan, hasBlocker } = req.body;
+    const developerName = req.user.name;
+    const username = req.user.username;
 
     // Validation
-    if (!developerName || !previousDayWork || !todayPlan || hasBlocker === undefined) {
+    if (!previousDayWork || !todayPlan || hasBlocker === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields: developerName, previousDayWork, todayPlan, and hasBlocker',
+        message:
+          "Please provide all required fields: previousDayWork, todayPlan, and hasBlocker",
+      });
+    }
+
+    // Check if user already submitted today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const existingNote = await DailyNote.findOne({
+      username,
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    if (existingNote) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already submitted your check-in for today",
       });
     }
 
     // Create daily note
     const dailyNote = await DailyNote.create({
       developerName,
+      username,
       previousDayWork,
       todayPlan,
       hasBlocker,
@@ -47,13 +69,13 @@ const getAllDailyNotes = async (req, res) => {
     if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
-      
+
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
       query.createdAt = {
         $gte: startOfDay,
-        $lte: endOfDay
+        $lte: endOfDay,
       };
     }
 
