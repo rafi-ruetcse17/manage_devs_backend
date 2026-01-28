@@ -12,15 +12,16 @@ const dailyNoteSchema = new mongoose.Schema(
       required: [true, "Please add username"],
       trim: true,
     },
-    previousDayWork: {
+    dayStartPlan: {
       type: String,
-      required: [true, "Please add what you did on the previous day"],
+      required: [true, "Please add your plan for the day"],
       trim: true,
     },
-    todayPlan: {
+    dayEndWorkUpdate: {
       type: String,
-      required: [true, "Please add what you will do today"],
+      required: false,
       trim: true,
+      default: "",
     },
     hasBlocker: {
       type: Boolean,

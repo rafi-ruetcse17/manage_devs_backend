@@ -5,20 +5,18 @@ const DailyNote = require("../models/DailyNote");
 // @access  Private
 const createDailyNote = async (req, res) => {
   try {
-    const { previousDayWork, todayPlan, hasBlocker } = req.body;
+    const { dayStartPlan, dayEndWorkUpdate, hasBlocker } = req.body;
     const developerName = req.user.name;
     const username = req.user.username;
 
-    // Validation
-    if (!previousDayWork || !todayPlan || hasBlocker === undefined) {
+    if (!dayStartPlan || hasBlocker === undefined) {
       return res.status(400).json({
         success: false,
         message:
-          "Please provide all required fields: previousDayWork, todayPlan, and hasBlocker",
+          "Please provide all required fields: dayStartPlan and hasBlocker",
       });
     }
 
-    // Check if user already submitted today
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -30,18 +28,23 @@ const createDailyNote = async (req, res) => {
     });
 
     if (existingNote) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already submitted your check-in for today",
+      existingNote.dayStartPlan = dayStartPlan;
+      existingNote.dayEndWorkUpdate =
+        dayEndWorkUpdate || existingNote.dayEndWorkUpdate;
+      existingNote.hasBlocker = hasBlocker;
+      await existingNote.save();
+
+      return res.status(200).json({
+        success: true,
+        data: existingNote,
+        message: "Check-in updated successfully",
       });
     }
-
-    // Create daily note
     const dailyNote = await DailyNote.create({
       developerName,
       username,
-      previousDayWork,
-      todayPlan,
+      dayStartPlan,
+      dayEndWorkUpdate: dayEndWorkUpdate || "",
       hasBlocker,
     });
 
@@ -65,7 +68,6 @@ const getAllDailyNotes = async (req, res) => {
     const { date } = req.query;
     let query = {};
 
-    // If date is provided, filter by that specific date
     if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
