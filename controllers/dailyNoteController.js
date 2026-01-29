@@ -5,7 +5,7 @@ const DailyNote = require("../models/DailyNote");
 // @access  Private
 const createDailyNote = async (req, res) => {
   try {
-    const { dayStartPlan, dayEndWorkUpdate, hasBlocker } = req.body;
+    const { dayStartPlan, dayEndWorkUpdate, hasBlocker, date } = req.body;
     const developerName = req.user.name;
     const username = req.user.username;
 
@@ -17,9 +17,11 @@ const createDailyNote = async (req, res) => {
       });
     }
 
-    const startOfDay = new Date();
+    const baseDate = date ? new Date(date) : new Date();
+
+    const startOfDay = new Date(baseDate);
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date();
+    const endOfDay = new Date(baseDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     const existingNote = await DailyNote.findOne({
@@ -40,12 +42,14 @@ const createDailyNote = async (req, res) => {
         message: "Check-in updated successfully",
       });
     }
+
     const dailyNote = await DailyNote.create({
       developerName,
       username,
       dayStartPlan,
       dayEndWorkUpdate: dayEndWorkUpdate || "",
       hasBlocker,
+      createdAt: date ? startOfDay : undefined,
     });
 
     res.status(201).json({
